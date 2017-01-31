@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">MoodoMeter_v1.0</string>
+    <string name="button">Start camera</string>
+    <string name="crop">Detect face and crop</string>
+    <string name="content">Image</string>
+</resources>
