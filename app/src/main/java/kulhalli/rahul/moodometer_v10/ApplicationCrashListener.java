@@ -10,7 +10,7 @@ import org.acra.sender.HttpSender;
 
 //report format defined here
 @ReportsCrashes(
-        formUri = "http://54.191.17.101:5000/crashLog",           //URL of server!
+        formUri = "<SERVER URL>/crashLog",           //URL of server!
         connectionTimeout = 25000,
         socketTimeout = 25000,
         httpMethod = HttpSender.Method.POST,                //HTTP POST format!
