@@ -1,0 +1,15 @@
+Structure of the EC2 instance (starting from /home/rahul):
+/home-
+      |- caffe
+        |- //all caffe files here
+      |- server
+        |- already_included.txt //this text file contains the names of all images already included in the model
+        |- batch_include.py     //this is a script for automatically figuring out the unique images in the images/ directory, and adding them to the caffemodel for retuning
+        |- emotion_model        //this folder contains the caffemodel
+          |- deploy.prototxt
+          |- EmotiW_VGG_S.caffemodel
+          |- example.py         //python wrapper script that internally calls caffe
+          |- mean.binaryproto
+        |- images     //the main local repo for images
+          |- //all decoded images go here
+        |- server.py  //MAIN flask application. Run on elevated mode (sudo)
