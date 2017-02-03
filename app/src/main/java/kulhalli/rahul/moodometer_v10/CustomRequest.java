@@ -56,4 +56,3 @@ public class CustomRequest extends Request<JSONObject> {
             listener.onResponse(response);
         }
     }
-}

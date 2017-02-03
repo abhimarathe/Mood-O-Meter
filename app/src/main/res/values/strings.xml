@@ -3,4 +3,9 @@
     <string name="button">Start camera</string>
     <string name="crop">Detect face and crop</string>
     <string name="content">Image</string>
+    <string name="final_label">PREDICTED EMOTIONS</string>
+
+
+    <!-- ACRAA -->
+    <string name="toast_text">"Hmm, seems MoodoMeter has crashed. The error reports are sent to our servers for analysis."</string>
 </resources>

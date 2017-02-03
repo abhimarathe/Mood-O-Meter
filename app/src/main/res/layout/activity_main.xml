@@ -20,38 +20,50 @@
         android:layout_height="wrap_content" />
 
     <ImageView
-        android:id="@+id/image"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/camera"
-        android:layout_marginTop="20dp"
-        android:layout_width="300dp"
-        android:layout_height="300dp" />
-
-    <ImageView
         android:id="@+id/happy"
         android:layout_below="@id/image"
         android:layout_marginTop="15dp"
         android:layout_width="100dp"
         android:layout_height="200dp"
-        android:background="@drawable/happy"/>
+        android:scaleType="center"
+        android:scaleX="0.75"
+        android:scaleY="0.75"
+        android:elevation="10dp"
+        android:background="@drawable/smiling"/>
 
     <ImageView
         android:id="@+id/sad"
+        android:elevation="10dp"
         android:layout_below="@id/image"
         android:layout_marginStart="120dp"
         android:layout_marginTop="15dp"
+        android:scaleType="center"
+        android:scaleX="0.75"
+        android:scaleY="0.75"
         android:layout_width="100dp"
         android:layout_height="200dp"
         android:background="@drawable/sad"/>
 
     <ImageView
         android:id="@+id/neutral"
+        android:elevation="10dp"
         android:layout_below="@id/image"
+        android:scaleType="center"
+        android:scaleX="0.75"
+        android:scaleY="0.75"
         android:layout_marginStart="240dp"
         android:layout_marginTop="15dp"
         android:layout_width="100dp"
         android:layout_height="200dp"
         android:background="@drawable/neutral"/>
+
+    <ImageView
+        android:id="@+id/image"
+        android:layout_marginTop="14dp"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_below="@+id/camera"
+        android:layout_centerHorizontal="true" />
 
 
 </RelativeLayout>

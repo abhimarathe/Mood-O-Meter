@@ -3,6 +3,7 @@ package kulhalli.rahul.moodometer_v10;
 import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,6 +13,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Base64;
@@ -23,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.android.volley.AuthFailureError;
+import com.android.volley.DefaultRetryPolicy;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -33,6 +36,8 @@ import com.android.volley.toolbox.Volley;
 import com.google.android.gms.vision.Frame;
 import com.google.android.gms.vision.face.Face;
 import com.google.android.gms.vision.face.FaceDetector;
+//import com.google.android.gms.samples.vision.face.patch.SafeFaceDetector;
+import org.acra.ACRA;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,11 +45,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
+
     /*
     *
     * Developer - Rahul Kulhalli
@@ -60,11 +68,14 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_REQUEST_CODE = 0;
     private static final int PERM_REQUEST_CODE = 111;
-    private static final String URL = "http://54.200.191.184/saveEmotions";
+    private static final String URL = "http://54.191.17.101:5000/upload";    //subject to change! Please update if EC2 instance is rebooted!
     private ImageView imageView;
     private Bitmap bitmap;
     private File globalFile;
+    private String gString;
     private float smilingProbability;
+    private long time_start;
+    private long time_end;
 
     //the three emotion buttons
     private ImageView happy;
@@ -99,10 +110,34 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     isCameraButtonClicked = true;
                     Intent startCamera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    File imageFile = new File(Environment.getExternalStorageDirectory(), "image_capture.jpg");
-                    globalFile = imageFile;
-                    Uri imageFileUri = Uri.fromFile(imageFile);
-                    startCamera.putExtra(MediaStore.EXTRA_OUTPUT, imageFileUri);
+
+                    File x = new File(Environment.getExternalStorageDirectory(),"mood_o_meter");
+
+                    if(!x.exists()){    //if it doesn't already exist
+                        boolean result = x.mkdir();
+                        if(!result){     //AND if mkdir fails,
+                            Log.d("DIRECTORY_ERROR", "Cannot create directory...");
+                            ACRA.getErrorReporter().handleException(new Exception("Directory creation failed..."));
+                        }
+                        else{
+                            Log.d("DIR_CREATED", "Created directory...");
+                        }
+                    }else{
+                        Log.d("ALREADY_EXISTS", "Directory already exists");
+                        Log.d("ROOT_DIR_CONTENTS", Arrays.toString(Environment.getExternalStorageDirectory().list()));
+                    }
+
+                    File imageFile = new File(x, "image_capture.jpg");
+                    //globalFile = imageFile;
+
+                    gString = "file:"+imageFile.getAbsolutePath();
+
+                    //replace with FileProvider
+                    Uri fileProviderUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID+".provider", imageFile);
+
+                    //Uri imageFileUri = Uri.fromFile(imageFile);
+
+                    startCamera.putExtra(MediaStore.EXTRA_OUTPUT, fileProviderUri);
                     startActivityForResult(startCamera, CAMERA_REQUEST_CODE);
                 }
             });
@@ -171,31 +206,49 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         else{
-            Log.d("PERMS_OKAY", "Not Android M... Permissions granted in Manifest...");
+            Log.d("PERMS_OKAY", "Permissions have been granted");
         }
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        //super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == CAMERA_REQUEST_CODE && resultCode == RESULT_OK && data!=null){
-            Uri fileUri = data.getData();
-            Bitmap image = null;
-            try{
-                image = BitmapFactory.decodeStream(getContentResolver().openInputStream(fileUri));
-            }catch(FileNotFoundException fe){
-                Log.e("BITMAP_DECODE","Error decoding Bitmap...");
-                fe.printStackTrace();
-            }
-            //bitmap = image;
-            //first, make sure that bitmap is in portrait mode
-            Log.d("ORIENT","Verifying orientation...");
-            Bitmap _image = verifyOrientation(image);
+        super.onActivityResult(requestCode, resultCode, data);
 
-            cropImage(_image);
-            //imageView.setImageBitmap(image);
+        if(requestCode == CAMERA_REQUEST_CODE && resultCode == RESULT_OK){
+
+            Uri imageUri = Uri.parse(gString);
+            Bitmap img = null;
+
+            if(imageUri == null){
+                Log.d("URI_NULL", "URI is null");
+            }
+            else{
+                try {
+                    img = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri));
+                }catch(FileNotFoundException e){
+                    e.printStackTrace();
+                }
+            }
+
+            if(img!=null){
+                Log.d("GOT_IMG", "Retrieved bitmap! ");
+
+                //bitmap = image;
+                //first, make sure that bitmap is in portrait mode
+
+                Log.d("ORIENT","Verifying orientation...");
+
+                Bitmap _image = verifyOrientation(img);
+
+                cropImage(_image);
+                //imageView.setImageBitmap(image);
+            }
+            else{
+                Log.d("NO_ANY", "No bitmap retrieved...");
+            }
         }
-        else Log.e("INTENT_ERROR","Something went wrong with the intent...");
     }
+
+
     private Bitmap verifyOrientation(Bitmap bitmap) {
         Log.d("ORIENT","In orientation check..");
         int rotate = 0;
@@ -241,6 +294,23 @@ public class MainActivity extends AppCompatActivity {
 
         if(!detector.isOperational()){
             Log.d("NOT_OPERATIONAL","Face is not operational!");
+
+            Toast.makeText(MainActivity.this, "Sorry, it seems that FaceDetector hasn't yet been installed on your device. " +
+                    "Total internal memory : "+MemoryUtility.getTotalInternalMemory(MainActivity.this)+", Total free " +
+                    "internal memory: "+MemoryUtility.getPercentageMemoryFree(MainActivity.this), Toast.LENGTH_LONG).show();
+
+            if(MemoryUtility.getPercentageMemoryFree(MainActivity.this) <= 10){
+                Toast.makeText(MainActivity.this, "It seems as if you have less than 10% free internal memory." +
+                        "Please clear some data and retry.", Toast.LENGTH_LONG).show();
+            }
+
+            IntentFilter lowstorageFilter = new IntentFilter(Intent.ACTION_DEVICE_STORAGE_LOW);
+            boolean hasLowStorage = registerReceiver(null, lowstorageFilter) != null;
+
+            if (hasLowStorage) {
+                Toast.makeText(this, "LOW STORAGE", Toast.LENGTH_LONG).show();
+                Log.w("LOW_STORAGE", "Phone has low storage space...");
+            }
         }
 
         Frame frame = new Frame.Builder()
@@ -253,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
         for(int i=0;i<faces.size();i++){
 
             Face face = faces.valueAt(i);
-            Log.d("SMILING_PROB","Smiling probability :: "+String.valueOf(face.getIsSmilingProbability()));
+            Log.d("SMILING_PROBABILITY","Smiling probability :: "+String.valueOf(face.getIsSmilingProbability()));
             smilingProbability = face.getIsSmilingProbability();
 
             Toast.makeText(MainActivity.this, "Smiling probability: "+face.getIsSmilingProbability(), Toast.LENGTH_LONG).show();
@@ -263,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d("COORDINATES", x1 + ", " + y1);
 
             Bitmap cropped = Bitmap.createBitmap(bitmap, (int)x1, (int)y1, (int)face.getWidth()+10, (int)face.getHeight()+10);
-            Log.d("FACE_COORDS", (int) x1 + ", " + (int) y1 + ", " + (int) (face.getWidth() + 10) +
+            Log.d("FACE_COORDINATES", (int) x1 + ", " + (int) y1 + ", " + (int) (face.getWidth() + 10) +
                     ", " + (int) (face.getHeight() + 10));
 
             Log.d("NEW_CROPPED_SPECS", cropped.getWidth()+""+cropped.getHeight());
@@ -271,23 +341,35 @@ public class MainActivity extends AppCompatActivity {
             result = cropped;
         }
 
+        //if no face found, directly image message as-is
+        if(faces.size() == 0){
+            Log.d("NO_FACE_FOUND", "No faces found in the image!");
+            imageView.setImageBitmap(bitmap);
+            convertBitmapToBase64(bitmap);
+        }
+
+        else{
+            //set imageView
+            imageView.setImageBitmap(result);
+
+            Log.d("VOLLEY_REQUEST", "Setting up volley request...");
+            convertBitmapToBase64(result);
+        }
+
         //finally, release the detector
         Log.d("DETECTOR_RELEASE","Releasing detector...");
         detector.release();
+    }
 
-        //set imageView
-        imageView.setImageBitmap(result);
-
-        Log.d("VOLLEY_REQ", "Setting up volley request...");
-
-
+    private void convertBitmapToBase64(Bitmap result){
         //---------------Converting cropped image to Base64 string------------------------------
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         if(result!=null){
             result.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
             base64String = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
-            Log.d("B_64_STR", base64String);
+            Log.d("BASE_64_STRING", base64String);
             //setUpVolleyRequest(base64String, 2);
+            Log.d("B64_done", "SET BASE 64 STRING");
         }
         else{
             Log.d("NULL", "NULL bitmap");
@@ -298,59 +380,82 @@ public class MainActivity extends AppCompatActivity {
     private void setUpVolleyRequest(final String encoded_base64_str, final int detected_emotion) {
         Log.d("VOLLEY","Setting up request...");
 
-
-        JSONObject dataToSend = new JSONObject();
-        try {
-            dataToSend.put("base64string", base64String);
-            dataToSend.put("emotion", String.valueOf(emotion));
-            dataToSend.put("smiling_probability", String.valueOf(smilingProbability));
-
-            Log.d("SENDING_JSON_b6d", dataToSend.getString("base64string"));
-            Log.d("SENDING_JSON_emotion", dataToSend.getString("emotion"));
-            Log.d("SENDING_JSON_smile", dataToSend.getString("smiling_probability"));
-
-        }catch(JSONException e){
-            e.printStackTrace();
-        }
-
-
         final ProgressDialog dialog = new ProgressDialog(MainActivity.this);
         dialog.setMessage(String.valueOf("Please wait, the face is being evaluated..."));
         dialog.show();
+
+        JSONObject data = new JSONObject();
+        try {
+            data.put("base64string", base64String);
+            data.put("emotion", String.valueOf(emotion));
+            data.put("smiling_probability", String.valueOf(smilingProbability));
+
+            Log.d("JSON_OBJ", "Created JSON object... Sending up");
+
+            Log.d("base64 : ", data.getString("base64string"));
+            Log.d("emotion : ", data.getString("emotion"));
+            Log.d("smiling? : ", data.getString("smiling_probability"));
+
+
+        }catch(JSONException e){
+            Log.d("BAD_JSON", "Bad JSON format");
+        }
+
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.POST,
                 URL,
-                dataToSend,
+                data,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         dialog.cancel();
-                        Log.d("REQUEST_S","Response! Success!");
-                        //switch over to new activity
-                        try{
-                            String result = response.getString("Result");
-                            if("OK".equals(result)){
-                                Log.d("GOT_OK", "Got OK message..");
-                                String emotions = response.getString("emotions");
-                                Intent newIntent = new Intent(MainActivity.this, OnJsonResponseReceived.class);
-                                newIntent.putExtra("raw_text", emotions);
-                                startActivity(newIntent);
+                        time_end = System.currentTimeMillis();
+                        Log.d(":: RESPONSE ::", response.toString());
+                        Log.d(":: RESPONSE_TIME::", String.valueOf(time_end - time_start)+" ms");
+                        try {
+                            String s_response = response.getString("Result");
+                            if("OK".equals(s_response)){
+                                Log.d("YES!", "Got an OK!");
+
+                                Iterator<String> responseIterator = response.keys();
+                                int k = 0;
+                                while(responseIterator.hasNext()){
+                                    Log.d("KEY_"+k, responseIterator.next());
+                                    k++;
+                                }
+
+                                //dialog.cancel();
+                                Toast.makeText(MainActivity.this, "Received response with ID "+response.getString("id"), Toast.LENGTH_LONG).show();
+                                Intent i = new Intent(MainActivity.this, OnJsonResponseReceived.class);
+                                i.putExtra("json", response.toString());
+                                startActivity(i);
                             }
-                            else{
-                                Toast.makeText(MainActivity.this, "Something went wrong...", Toast.LENGTH_LONG).show();
-                            }
+                            //simply print data
+                            //Toast.makeText(MainActivity.this, response.toString(), Toast.LENGTH_LONG).show();
                         }catch(JSONException e){
-                            Log.d("JSON_EXCEPTION", e.getMessage());
+                            e.printStackTrace();
                         }
                     }
                 },
                 new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.e("VOLLEY_ERROR", error.getMessage());
+                        dialog.cancel();
+
+                        time_end = System.currentTimeMillis();
+                        Log.d(":: RESPONSE_TIME::", String.valueOf(time_end - time_start)+" ms");
+
+                        String err = (error.getMessage() == null)?"some error occurred...":error.getMessage();
+                        Log.d(" :: ERROR :: ", err);
+
+                        //restart activity
+                        Intent intent = getIntent();
+                        finish();
+                        startActivity(intent);
                     }
                 }
         )
+
         {
             @Override
             protected Map<String, String> getParams() throws AuthFailureError {
@@ -366,7 +471,18 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
+        //CustomRequest jsObjRequest = new CustomRequest(Method.POST, url, params,
+        // this.createRequestSuccessListener(), this.createRequestErrorListener());
+
+        request.setRetryPolicy(new DefaultRetryPolicy(DefaultRetryPolicy.DEFAULT_TIMEOUT_MS * 10, 2,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+
         RequestQueue queue = Volley.newRequestQueue(MainActivity.this);
         queue.add(request);
+
+        Toast.makeText(MainActivity.this, "Request creation successful. Sending to server...", Toast.LENGTH_SHORT).show();
+
+        //start timer
+        time_start = System.currentTimeMillis();
     }
 }
