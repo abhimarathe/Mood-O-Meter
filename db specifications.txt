@@ -1,0 +1,14 @@
+I used MongoDB as the back-end system for handling crash reports and incoming POST messages from the Android devices.
+
+The main reason for using MongoDB was that of flexibility, which unstructured data provides. Documents (JSON) can directly be pushed into the database without having to undergo tedious parsing.
+
+MongoDB interfaces seamlessly with Python via the PyMongo driver. You may find more details over here -> https://api.mongodb.com/python/current/
+
+The database layout can be visualized in the following way:
+
+db
+  |- flask
+      |- sentiments       //this collection stores all the incoming POST messages from Android.
+          stores document in the form of {base64string, emotion, smiling_probability}
+      |- crash_reports    //this collection stores error log dumps as-is.
+          to see the structure of the json dump, please refer to this GitHub gist -> https://gist.github.com/KevinGaudin/5557961
