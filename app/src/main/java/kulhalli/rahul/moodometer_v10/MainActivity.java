@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -88,6 +89,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int NEUTRAL = 2;
     private static final int SAD = 3;
 
+    private Button startCameraButton;
+
     private int emotion;
     private String base64String;
 
@@ -97,51 +100,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Log.d("PERM_CHECK", "Checking permissions..");
         checkPermissions();
-        Button startCameraButton = (Button) findViewById(R.id.camera);
+        startCameraButton = (Button) findViewById(R.id.camera);
         imageView = (ImageView) findViewById(R.id.image);
 
         happy = (ImageView) findViewById(R.id.happy);
         neutral = (ImageView) findViewById(R.id.neutral);
         sad = (ImageView) findViewById(R.id.sad);
-
-        if (startCameraButton != null) {
-            startCameraButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    isCameraButtonClicked = true;
-                    Intent startCamera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
-                    File x = new File(Environment.getExternalStorageDirectory(),"mood_o_meter");
-
-                    if(!x.exists()){    //if it doesn't already exist
-                        boolean result = x.mkdir();
-                        if(!result){     //AND if mkdir fails,
-                            Log.d("DIRECTORY_ERROR", "Cannot create directory...");
-                            ACRA.getErrorReporter().handleException(new Exception("Directory creation failed..."));
-                        }
-                        else{
-                            Log.d("DIR_CREATED", "Created directory...");
-                        }
-                    }else{
-                        Log.d("ALREADY_EXISTS", "Directory already exists");
-                        Log.d("ROOT_DIR_CONTENTS", Arrays.toString(Environment.getExternalStorageDirectory().list()));
-                    }
-
-                    File imageFile = new File(x, "image_capture.jpg");
-                    //globalFile = imageFile;
-
-                    gString = "file:"+imageFile.getAbsolutePath();
-
-                    //replace with FileProvider
-                    Uri fileProviderUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID+".provider", imageFile);
-
-                    //Uri imageFileUri = Uri.fromFile(imageFile);
-
-                    startCamera.putExtra(MediaStore.EXTRA_OUTPUT, fileProviderUri);
-                    startActivityForResult(startCamera, CAMERA_REQUEST_CODE);
-                }
-            });
-        }
 
         happy.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -193,14 +157,15 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
     private void checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if(this.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
-                    && this.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED
-                    && this.checkSelfPermission(Manifest.permission.INTERNET)!=PackageManager.PERMISSION_GRANTED
-                    && this.checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){
+            if(checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)!=PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.INTERNET)!=PackageManager.PERMISSION_GRANTED
+                    && checkSelfPermission(Manifest.permission.CAMERA)!=PackageManager.PERMISSION_GRANTED){
                 Log.d("NO_PERMISSIONS","Permissions not granted");
-                this.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE,
                         Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.INTERNET,
                         Manifest.permission.CAMERA}, PERM_REQUEST_CODE);
             }
@@ -209,6 +174,72 @@ public class MainActivity extends AppCompatActivity {
             Log.d("PERMS_OKAY", "Permissions have been granted");
         }
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch(requestCode){
+            case PERM_REQUEST_CODE:{
+                if(permissions.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                    //if it reaches here, it means all permissions have been granted
+                    Toast.makeText(MainActivity.this, "All your permissions seem to be in order...", Toast.LENGTH_LONG).show();
+                    Log.d("PERMISSIONS_OK","All permissions seem to be granted...");
+                    startPhoto();
+                }
+                else{
+                    Toast.makeText(MainActivity.this, "We're extremely sorry, but it seems as if" +
+                            "your phone is not allowing the requested permissions to be acquired. " +
+                            "Please manually enable them, or wait for the next build.", Toast.LENGTH_LONG).show();
+                    Log.d("PERMISSIONS_NOT_OK","Permissions could not be granted...");
+                }
+            }
+        }
+    }
+
+    private void startPhoto(){
+
+        Log.d("TAKING_PHOTO","Taking photo!");
+
+        if (startCameraButton != null) {
+            startCameraButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    isCameraButtonClicked = true;
+                    Intent startCamera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+                    File x = new File(Environment.getExternalStorageDirectory(),"mood_o_meter");
+
+                    if(!x.exists()){    //if it doesn't already exist
+                        boolean result = x.mkdir();
+                        if(!result){     //AND if mkdir fails,
+                            Log.d("DIRECTORY_ERROR", "Cannot create directory...");
+                            ACRA.getErrorReporter().handleException(new Exception("Directory creation failed..."));
+                        }
+                        else{
+                            Log.d("DIR_CREATED", "Created directory...");
+                        }
+                    }else{
+                        Log.d("ALREADY_EXISTS", "Directory already exists");
+                        Log.d("ROOT_DIR_CONTENTS", Arrays.toString(Environment.getExternalStorageDirectory().list()));
+                    }
+
+                    File imageFile = new File(x, "image_capture.jpg");
+                    //globalFile = imageFile;
+
+                    gString = "file:"+imageFile.getAbsolutePath();
+
+                    //replace with FileProvider
+                    Uri fileProviderUri = FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID+".provider", imageFile);
+
+                    //Uri imageFileUri = Uri.fromFile(imageFile);
+
+                    startCamera.putExtra(MediaStore.EXTRA_OUTPUT, fileProviderUri);
+                    startActivityForResult(startCamera, CAMERA_REQUEST_CODE);
+                }
+            });
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
