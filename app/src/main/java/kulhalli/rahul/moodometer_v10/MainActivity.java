@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_REQUEST_CODE = 0;
     private static final int PERM_REQUEST_CODE = 111;
-    private static final String URL = "http://54.191.17.101:5000/upload";    //subject to change! Please update if EC2 instance is rebooted!
+    private static final String URL = "<SERVER URL>/upload";    //subject to change! Please update if EC2 instance is rebooted!
     private ImageView imageView;
     private Bitmap bitmap;
     private File globalFile;
