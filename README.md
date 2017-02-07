@@ -21,6 +21,9 @@ Caffe (https://github.com/BVLC/caffe) is a fast, open-source, easy-to-learn fram
 ##2) Flask
 Flask is a great way to get your server up and running in a jiffy. Flask has inbuilt response support, which makes API creation a walk in the park. I've used Flask for listening to the incoming POST requests from the ACRA crash logs as well as the Android data, and also for sending the respective responses back
 
+##3) MongoDB
+MongoDB is one of the best unstructured 'document stores' out there. I chose to use MongoDB because of its simplicity, and its flexibility. Also, since almost all the data handling takes place in the JSON format, MongoDB is the best bet for data storage. I've used MongoDB to store crash logs from ACRA as well as the transmitted Android data
+
 # Project Flow:
 1) User clicks 'Open Camera'
 
