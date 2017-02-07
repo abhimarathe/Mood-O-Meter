@@ -11,6 +11,14 @@ Volley (https://github.com/mcxiaoke/android-volley) is a high-performance, async
 ##3) ACRA
 ACRA (https://github.com/ACRA/acra) is an excellent crash reporting API, which integrates seamlessly in the application, and lets you upload crash reports/exceptions/unusual behaviors in your application to your server as a form, json, and even supports crash reporting via e-mail.
 
+
+#) Server side frameworks
+##1) Caffe
+Caffe (https://github.com/BVLC/caffe) is a fast, open-source, easy-to-learn framework for deep learning. Caffe, albeit being built in C & C++, provides excellent wrappers for Python. My main neural network is a caffemodel. You may find the caffemodel I've used (RGB) here - https://gist.github.com/GilLevi/54aee1b8b0397721aa4b
+
+##2) Flask
+Flask is a great way to get your server up and running in a jiffy. Flask has inbuilt response support, which makes API creation a walk in the park. I've used Flask for listening to the incoming POST requests from the ACRA crash logs as well as the Android data, and also for sending the respective responses back
+
 ##Project Flow:
 1) User clicks 'Open Camera'
 
