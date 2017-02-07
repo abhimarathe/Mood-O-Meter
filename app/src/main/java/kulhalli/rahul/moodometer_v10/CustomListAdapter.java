@@ -49,7 +49,7 @@ public class CustomListAdapter extends BaseAdapter {
         Emotion emotion = (Emotion)getItem(i);
 
         left.setText(emotion.getKey());
-        right.setText(emotion.getValue());
+        right.setText(String.valueOf(emotion.getValue()));
 
         return v;
     }

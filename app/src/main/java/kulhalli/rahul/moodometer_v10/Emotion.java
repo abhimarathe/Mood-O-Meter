@@ -2,9 +2,9 @@ package kulhalli.rahul.moodometer_v10;
 
 public class Emotion {
     private String key;
-    private String value;
+    private double value;
 
-    public Emotion(String key, String value){
+    public Emotion(String key, double value){
         this.key = key;
         this.value = value;
     }
@@ -13,7 +13,7 @@ public class Emotion {
         return key;
     }
 
-    public String getValue() {
+    public double getValue() {
         return value;
     }
 }

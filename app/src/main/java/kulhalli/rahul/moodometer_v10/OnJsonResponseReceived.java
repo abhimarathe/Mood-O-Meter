@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class OnJsonResponseReceived extends AppCompatActivity {
 
@@ -26,59 +27,48 @@ public class OnJsonResponseReceived extends AppCompatActivity {
         setContentView(R.layout.activity_on_json_response_received);
         final ListView listView = (ListView) findViewById(R.id.listview);
 
-                        /*
-                        * This is what the response from the server looks like:
-                        *
-                        * {
-                             "Result": "OK",
-                             "disgust": "0.0998%",
-                             "fear": "0.2272%",
-                             "happy": "99.6460%",
-                             "neutral": "0.0246%",
-                             "surprise": "0.0011%"
-                             "id": "58918d6ab0522c1c87b4f3ef"
-                          }
-                        *
-                        * */
+
+        /*
+        * Final response outlay:
+        *
+        *   {
+            "Result": "OK",
+             "data": "Processed 1/1 images in 0.778470 seconds ...\n----- Prediction for images/image-3d2423d8-7909-4c23-9701-71b3ff2dc8f9.jpg
+             -----\n 99.9705% - \"Neutral\"\n  0.0225% - \"Disgust\"\n  0.0070% - \"Surprise\"\n  0.0001% - \"Fear\"\n  0.0000% - \"Anger\"\n\n
+             Script took 2.031076 seconds.\n",
+             "id": "5899d912b0522cdfbff28baa"
+            }
+        *
+        * */
 
         Bundle data = getIntent().getExtras();
 
         if(data!=null){
 
-            JSONObject _data = null;
+            ArrayList<Emotion> list = new ArrayList<>();
 
-            try{
-                String stuff = data.getString("json");
-                _data = new JSONObject(stuff);
+            String raw_op = data.getString("op");
 
-                Log.d("PARSE_SUCCESS", "Successfully parsed..");
+            if(raw_op != null){
 
-                RelativeLayout layout = (RelativeLayout) findViewById(R.id.activity_on_json_response_received);
-                //iterator over keys and create dynamic textviews
-                int i = 0;
-                Iterator<String> json_keys = _data.keys();
-                ArrayList<Emotion> list = new ArrayList<>();
-                while(json_keys.hasNext()){
-                    String emotion_class = json_keys.next();
-                    String class_percent = _data.getString(emotion_class);
+                Log.d("RAW_OP", raw_op);
 
-                    if(emotion_class.equalsIgnoreCase("id") || emotion_class.equalsIgnoreCase("Result")){
-                        //do nothing
-                        Log.d("id/Result","Skipping...");
-                    }
-                    else{
-                        list.add(new Emotion(emotion_class, class_percent));
+                String[] lines = raw_op.split("\n");
+                for(String line: lines){
+                    if(line.contains("Neutral") || line.contains("Surprise") || line.contains("Fear") || line.contains("Anger") || line.contains("Disgust")
+                            || line.contains("Happy") || line.contains("Sad")){
+                        //Neutral
+                        String[] inner_split = line.split("-");
+                        //[0] is %, [1] is emotion
+                        double percent = Double.parseDouble(inner_split[0].replace("%","").trim());
+                        list.add(new Emotion(inner_split[1].trim(), percent));
                     }
                 }
-
-                CustomListAdapter adapter = new CustomListAdapter(OnJsonResponseReceived.this, list);
-
-                listView.setAdapter(adapter);
-
-            }catch(JSONException e){
-                Log.d("BAD_JSON", "Bad JSON Format...");
-                e.printStackTrace();
             }
+
+            CustomListAdapter adapter = new CustomListAdapter(OnJsonResponseReceived.this, list);
+
+            listView.setAdapter(adapter);
         }
     }
 }

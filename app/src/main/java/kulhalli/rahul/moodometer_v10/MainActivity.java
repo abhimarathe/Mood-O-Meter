@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int CAMERA_REQUEST_CODE = 0;
     private static final int PERM_REQUEST_CODE = 111;
-    private static final String URL = "<SERVER URL>/upload";    //subject to change! Please update if EC2 instance is rebooted!
+    private static final String URL = "http://54.191.17.101:5000/upload";    //subject to change! Please update if EC2 instance is rebooted!
     private ImageView imageView;
     private Bitmap bitmap;
     private File globalFile;
@@ -106,6 +106,8 @@ public class MainActivity extends AppCompatActivity {
         happy = (ImageView) findViewById(R.id.happy);
         neutral = (ImageView) findViewById(R.id.neutral);
         sad = (ImageView) findViewById(R.id.sad);
+
+        startPhoto();
 
         happy.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -184,7 +186,6 @@ public class MainActivity extends AppCompatActivity {
                     //if it reaches here, it means all permissions have been granted
                     Toast.makeText(MainActivity.this, "All your permissions seem to be in order...", Toast.LENGTH_LONG).show();
                     Log.d("PERMISSIONS_OK","All permissions seem to be granted...");
-                    startPhoto();
                 }
                 else{
                     Toast.makeText(MainActivity.this, "We're extremely sorry, but it seems as if" +
@@ -448,17 +449,12 @@ public class MainActivity extends AppCompatActivity {
                             if("OK".equals(s_response)){
                                 Log.d("YES!", "Got an OK!");
 
-                                Iterator<String> responseIterator = response.keys();
-                                int k = 0;
-                                while(responseIterator.hasNext()){
-                                    Log.d("KEY_"+k, responseIterator.next());
-                                    k++;
-                                }
+                                String raw_op = response.getString("data");
 
                                 //dialog.cancel();
                                 Toast.makeText(MainActivity.this, "Received response with ID "+response.getString("id"), Toast.LENGTH_LONG).show();
                                 Intent i = new Intent(MainActivity.this, OnJsonResponseReceived.class);
-                                i.putExtra("json", response.toString());
+                                i.putExtra("op", raw_op);
                                 startActivity(i);
                             }
                             //simply print data
